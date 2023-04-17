@@ -21,24 +21,24 @@ var (
 	StatusIncomplete = "INCOMPLETE"
 )
 
-func (impl *OrderService) CreateOrUpdateOrder(orderRequest dto.CreateOrderRequest) (*dto.CreateOderEvent, error) {
+func (impl *OrderService) CreateOrUpdateOrder(orderRequest dto.CreateOrderRequest) (*entity.Order, error) {
 	item, err := impl.repo.FindOrderByUserId(orderRequest.UserID)
 	if err != nil {
 		return nil, err
 	}
-	if item.UserID != "" || item.UserID != orderRequest.UserID {
+	if item.UserID == "" || item.OrderID == "" {
 		return impl.createNewOrder(orderRequest)
 	}
 	return impl.updateOrder(item, orderRequest)
 }
 
-func (impl *OrderService) createNewOrder(request dto.CreateOrderRequest) (*dto.CreateOderEvent, error) {
+func (impl *OrderService) createNewOrder(request dto.CreateOrderRequest) (*entity.Order, error) {
 
 	model := requestToOrder(request)
 	return impl.repo.SaveFinishOrder(model)
 }
 
-func (impl *OrderService) updateOrder(item *entity.Order, request dto.CreateOrderRequest) (*dto.CreateOderEvent, error) {
+func (impl *OrderService) updateOrder(item *entity.Order, request dto.CreateOrderRequest) (*entity.Order, error) {
 	model := requestToDetail(request)
 	item.List = append(item.List, model)
 	item.TotalPrice += model.TotalPrice

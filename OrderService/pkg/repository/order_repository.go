@@ -8,7 +8,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
-	"github.com/jsierrab3991/order-service/pkg/dto"
 	"github.com/jsierrab3991/order-service/pkg/entity"
 )
 
@@ -60,7 +59,7 @@ func (repository *OrderRepositoty) FindOrderByUserId(userId string) (*entity.Ord
 
 	return item, nil
 }
-func (repository *OrderRepositoty) SaveFinishOrder(model entity.Order) (*dto.CreateOderEvent, error) {
+func (repository *OrderRepositoty) SaveFinishOrder(model entity.Order) (*entity.Order, error) {
 	av, err := dynamodbattribute.MarshalMap(model)
 	if err != nil {
 		return nil, errors.New(ErrorCouldNotMarshItem)
@@ -73,9 +72,5 @@ func (repository *OrderRepositoty) SaveFinishOrder(model entity.Order) (*dto.Cre
 	if err != nil {
 		return nil, errors.New(ErrorCouldNoDynamoPutItem)
 	}
-	response := dto.CreateOderEvent{
-		OrderID:    model.OrderID,
-		TotalPrice: model.TotalPrice,
-	}
-	return &response, nil
+	return &model, nil
 }

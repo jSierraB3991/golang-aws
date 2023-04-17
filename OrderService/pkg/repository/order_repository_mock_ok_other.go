@@ -2,34 +2,30 @@ package repository
 
 import (
 	"github.com/google/uuid"
-	"github.com/jsierrab3991/order-service/pkg/dto"
 	"github.com/jsierrab3991/order-service/pkg/entity"
 )
 
 type OrderRepositoryMockOkOther struct {
+	PreValue int64
 }
 
-func (OrderRepositoryMockOkOther) FindOrderByUserId(userId string) (*entity.Order, error) {
-	return dataMock(userId), nil
+func (orm OrderRepositoryMockOkOther) FindOrderByUserId(userId string) (*entity.Order, error) {
+	return dataMock(userId, orm.PreValue), nil
 }
-func (OrderRepositoryMockOkOther) SaveFinishOrder(model entity.Order) (*dto.CreateOderEvent, error) {
-	data := dataMock(model.UserID)
-	return &dto.CreateOderEvent{
-		OrderID:    data.OrderID,
-		TotalPrice: data.TotalPrice + model.TotalPrice,
-	}, nil
+func (orm OrderRepositoryMockOkOther) SaveFinishOrder(model entity.Order) (*entity.Order, error) {
+	return &model, nil
 }
 
-func dataMock(userId string) *entity.Order {
+func dataMock(userId string, prevalue int64) *entity.Order {
 	return &entity.Order{
 		OrderID:    uuid.NewString(),
 		UserID:     userId,
-		TotalPrice: 2000,
+		TotalPrice: prevalue,
 		Status:     StatusIncomplete,
 		List: []entity.OrderDetail{{
 			Item:       "Alfombra",
 			Quantity:   2,
-			TotalPrice: 10000,
+			TotalPrice: prevalue,
 		}},
 	}
 }
