@@ -18,6 +18,7 @@ var (
 	ErrorCouldNoDynamoPutItem  = "could not dynamo put iem"
 	StatusIncomplete           = "INCOMPLETE"
 	StatusComplete             = "COMPLETE"
+	ErrorCouldNotDelteuitem    = "could not delete item"
 )
 
 type PaymentRepository struct {
@@ -52,7 +53,7 @@ func (repository *PaymentRepository) FindOrderByOrderId(orderId string) (*entity
 	item := new(entity.Payment)
 	err = dynamodbattribute.UnmarshalMap(result.Item, item)
 	if err != nil {
-		return nil, errors.New(ErrorFieldToMarShallRecord)
+		return nil, errors.New(ErrorCouldNotMarshItem)
 	}
 
 	return item, nil
@@ -66,9 +67,31 @@ func (repository *PaymentRepository) PaymentOrder(model *entity.Payment) (*entit
 		TableName: aws.String(repository.tableName),
 		Item:      av,
 	}
+	repository.DeleteOrder(model)
 	_, err = repository.dynaClient.PutItem(input)
 	if err != nil {
 		return nil, errors.New(ErrorCouldNoDynamoPutItem)
 	}
 	return model, nil
+}
+
+func (repository *PaymentRepository) DeleteOrder(model *entity.Payment) error {
+	order := model.OrderId
+	status := StatusIncomplete
+	input := &dynamodb.DeleteItemInput{
+		TableName: aws.String(repository.tableName),
+		Key: map[string]*dynamodb.AttributeValue{
+			"order_id": {
+				S: aws.String(order),
+			},
+			"status": {
+				S: aws.String(status),
+			},
+		},
+	}
+	_, err := repository.dynaClient.DeleteItem(input)
+	if err != nil {
+		return errors.New(ErrorCouldNotDelteuitem)
+	}
+	return nil
 }

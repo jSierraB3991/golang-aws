@@ -16,7 +16,7 @@ func handler(req events.APIGatewayProxyRequest) (response *events.APIGatewayProx
 	handlerImpl := handlers.New(region)
 	switch req.HTTPMethod {
 	case "POST":
-		return handlerImpl.Order(req)
+		return handlerImpl.Payment(req)
 	default:
 		return handlerImpl.UnHandledMethod()
 	}
