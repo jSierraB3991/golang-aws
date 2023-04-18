@@ -4,16 +4,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/jsierrab3991/order-service/pkg/dto"
 	"github.com/jsierrab3991/order-service/pkg/entity"
+	"github.com/jsierrab3991/order-service/pkg/queue"
 	"github.com/jsierrab3991/order-service/pkg/repository"
 )
 
 type OrderService struct {
-	repo repository.Repository
+	repo  repository.Repository
+	queue queue.Queue
 }
 
-func New(repo repository.Repository) *OrderService {
+func New(repo repository.Repository, queue queue.Queue) *OrderService {
 	return &OrderService{
-		repo: repo,
+		repo:  repo,
+		queue: queue,
 	}
 }
 
@@ -23,19 +26,37 @@ var (
 
 func (impl *OrderService) CreateOrUpdateOrder(orderRequest dto.CreateOrderRequest) (*entity.Order, error) {
 	item, err := impl.repo.FindOrderByUserId(orderRequest.UserID)
+	var response *entity.Order
+	if err != nil || item.OrderID == "" {
+		response, err = impl.createNewOrder(orderRequest)
+	} else {
+		response, err = impl.updateOrder(item, orderRequest)
+	}
+
 	if err != nil {
 		return nil, err
 	}
-	if item.UserID == "" || item.OrderID == "" {
-		return impl.createNewOrder(orderRequest)
+	if err = impl.queue.SendMessageQueue(response); err != nil {
+		return nil, err
 	}
-	return impl.updateOrder(item, orderRequest)
+	return response, nil
 }
 
 func (impl *OrderService) createNewOrder(request dto.CreateOrderRequest) (*entity.Order, error) {
-
-	model := requestToOrder(request)
-	return impl.repo.SaveFinishOrder(model)
+	model := &entity.Order{
+		OrderID:    uuid.NewString(),
+		UserID:     request.UserID,
+		TotalPrice: request.TotalPrice,
+		Status:     StatusIncomplete,
+		List: []entity.OrderDetail{
+			{
+				Item:       request.Item,
+				Quantity:   request.Quantity,
+				TotalPrice: request.TotalPrice,
+			},
+		},
+	}
+	return impl.repo.SaveFinishOrder(*model)
 }
 
 func (impl *OrderService) updateOrder(item *entity.Order, request dto.CreateOrderRequest) (*entity.Order, error) {
@@ -50,21 +71,5 @@ func requestToDetail(request dto.CreateOrderRequest) entity.OrderDetail {
 		Item:       request.Item,
 		Quantity:   request.Quantity,
 		TotalPrice: request.TotalPrice,
-	}
-}
-
-func requestToOrder(request dto.CreateOrderRequest) entity.Order {
-	return entity.Order{
-		OrderID:    uuid.NewString(),
-		UserID:     request.UserID,
-		TotalPrice: request.TotalPrice,
-		Status:     StatusIncomplete,
-		List: []entity.OrderDetail{
-			{
-				Item:       request.Item,
-				Quantity:   request.Quantity,
-				TotalPrice: request.TotalPrice,
-			},
-		},
 	}
 }

@@ -16,19 +16,11 @@ type OrderRepositoty struct {
 	tableName  string
 }
 
-func New(region string) *OrderRepositoty {
+func New(awsSession *session.Session) *OrderRepositoty {
 	return &OrderRepositoty{
 		tableName:  "order-table",
-		dynaClient: getDynaClient(region),
+		dynaClient: dynamodb.New(awsSession),
 	}
-}
-
-func getDynaClient(region string) dynamodbiface.DynamoDBAPI {
-	awsSession, err := session.NewSession(&aws.Config{Region: aws.String(region)})
-	if err != nil {
-		return nil
-	}
-	return dynamodb.New(awsSession)
 }
 
 var (

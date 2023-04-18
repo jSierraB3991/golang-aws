@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Resources:
+  QueueOrderPayment:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: queue-order-payment
+
+
+  OrderTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: order-table
+      AttributeDefinitions:
+        - AttributeName: user_id
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: user_id
+          KeyType: HASH
+        - AttributeName: status
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+  PaymentTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: payment-table 
+      AttributeDefinitions:
+        - AttributeName: order_id
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: order_id
+          KeyType: HASH
+        - AttributeName: status
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  OrderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: order-function
+      CodeUri: ./OrderService/build/order.zip
+      Handler: main
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /stagging/order
+            Method: POST
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !Ref QueueOrderPayment
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrderTable
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt QueueOrderPayment.Arn
+
+  PaymenteFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: payment-function
+      CodeUri: ./PaymentService/build/payment.zip
+      Handler: main
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Events:
+        CatchAll:
+          Type: Api
+          Properties:
+            Path: /stagging/payment
+            Method: POST
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !Ref QueueOrderPayment
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PaymentTable
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt QueueOrderPayment.Arn
+
+  ApiGatewayRestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: stagging
+      DefinitionBody:
+        swagger: '2.0'
+        info:
+          title: 'API Order'
+        paths:
+          /order:
+            post:
+              x-amazon-apigateway-integration:
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OrderFunction.Arn}/invocations
+                passthroughBehavior: when_no_templates
+                httpMethod: POST
+                type: aws_proxy
+          /payment:
+            post:
+              x-amazon-apigateway-integration:
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PaymenteFunction.Arn}/invocations
+                passthroughBehavior: when_no_templates
+                httpMethod: POST
+                type: aws_proxy
+  LambdaPermissionOrder:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt OrderFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/*"
+  LambdaPermissionPayment:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt PaymenteFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRestApi}/*/*/*"
+      
