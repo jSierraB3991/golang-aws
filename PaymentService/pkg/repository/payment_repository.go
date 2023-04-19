@@ -26,15 +26,14 @@ type PaymentRepository struct {
 	tableName  string
 }
 
-func New(region string) *PaymentRepository {
+func New(session *session.Session) *PaymentRepository {
 	return &PaymentRepository{
 		tableName:  "payment-table",
-		dynaClient: getDynaClient(region),
+		dynaClient: getDynaClient(session),
 	}
 }
 
-func getDynaClient(region string) dynamodbiface.DynamoDBAPI {
-	awsSession, _ := session.NewSession(&aws.Config{Region: aws.String(region)})
+func getDynaClient(awsSession *session.Session) dynamodbiface.DynamoDBAPI {
 	return dynamodb.New(awsSession)
 }
 

@@ -59,6 +59,16 @@ Resources:
             Path: /stagging/order
             Method: POST
       Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - sqs:GetQueueUrl
+              Resource: !GetAtt QueueOrderPayment.Arn
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource: !GetAtt QueueOrderPayment.Arn
         - SQSSendMessagePolicy:
             QueueName: !Ref QueueOrderPayment
         - DynamoDBCrudPolicy:
@@ -85,6 +95,16 @@ Resources:
             Path: /stagging/payment
             Method: POST
       Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - sqs:GetQueueUrl
+              Resource: !GetAtt QueueOrderPayment.Arn
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+              Resource: !GetAtt QueueOrderPayment.Arn
         - SQSSendMessagePolicy:
             QueueName: !Ref QueueOrderPayment
         - DynamoDBCrudPolicy:
