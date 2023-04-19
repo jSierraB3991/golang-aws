@@ -69,15 +69,8 @@ Resources:
               Action:
                 - sqs:SendMessage
               Resource: !GetAtt QueueOrderPayment.Arn
-        - SQSSendMessagePolicy:
-            QueueName: !Ref QueueOrderPayment
         - DynamoDBCrudPolicy:
             TableName: !Ref OrderTable
-      Events:
-        MySQSEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt QueueOrderPayment.Arn
 
   PaymenteFunction:
     Type: AWS::Serverless::Function
@@ -105,15 +98,8 @@ Resources:
               Action:
                 - sqs:SendMessage
               Resource: !GetAtt QueueOrderPayment.Arn
-        - SQSSendMessagePolicy:
-            QueueName: !Ref QueueOrderPayment
         - DynamoDBCrudPolicy:
             TableName: !Ref PaymentTable
-      Events:
-        MySQSEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt QueueOrderPayment.Arn
 
   ApiGatewayRestApi:
     Type: AWS::Serverless::Api

@@ -38,7 +38,17 @@ func (q *QueuePayment) SendMsg(queueURL *string, body []byte) error {
 	_, err := svc.SendMessage(&sqs.SendMessageInput{
 		DelaySeconds: aws.Int64(10),
 		MessageBody:  aws.String(string(body)),
-		QueueUrl:     queueURL,
+		MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			"Title": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("Create Order"),
+			},
+			"Author": {
+				DataType:    aws.String("String"),
+				StringValue: aws.String("Order Service"),
+			},
+		},
+		QueueUrl: queueURL,
 	})
 	if err != nil {
 		return err
