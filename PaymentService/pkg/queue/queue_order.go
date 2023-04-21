@@ -27,7 +27,7 @@ func (q *QueueOrder) GetQueueURL() (*sqs.GetQueueUrlOutput, error) {
 
 func New(sess *session.Session) *QueueOrder {
 	return &QueueOrder{
-		queueName: "queue-order-payment",
+		queueName: "queue-payment-complete",
 		sess:      sess,
 	}
 }

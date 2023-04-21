@@ -43,7 +43,7 @@ func (handler *OrderHandler) Order(req events.APIGatewayProxyRequest) (*events.A
 	var orderRequest dto.CreateOrderRequest
 
 	if err := json.Unmarshal([]byte(req.Body), &orderRequest); err != nil {
-		return apiResponse(http.StatusBadRequest, ErrorInvalidUserData)
+		return apiResponse(http.StatusBadRequest, err.Error())
 	}
 
 	result, err := handler.impl.CreateOrUpdateOrder(orderRequest)

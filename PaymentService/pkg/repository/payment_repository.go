@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -69,7 +70,7 @@ func (repository *PaymentRepository) PaymentOrder(model *entity.Payment) (*entit
 	repository.DeleteOrder(model)
 	_, err = repository.dynaClient.PutItem(input)
 	if err != nil {
-		return nil, errors.New(ErrorCouldNoDynamoPutItem)
+		return nil, errors.New(fmt.Sprintf("model%v", &model))
 	}
 	return model, nil
 }

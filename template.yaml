@@ -6,6 +6,10 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: queue-order-payment
+  QueuePaymentComplete:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: queue-payment-complete
 
 
   OrderTable:
@@ -42,6 +46,31 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+  
+  OrderFunctionListen:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: order-listen
+      CodeUri: ./OrderListener/build/order.zip
+      Handler: main
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Events:
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt QueueOrderPayment.Arn
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+              Resource: !GetAtt QueueOrderPayment.Arn
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PaymentTable
 
   OrderFunction:
     Type: AWS::Serverless::Function
@@ -93,11 +122,11 @@ Resources:
             - Effect: Allow
               Action:
                 - sqs:GetQueueUrl
-              Resource: !GetAtt QueueOrderPayment.Arn
+              Resource: !GetAtt QueuePaymentComplete.Arn
             - Effect: Allow
               Action:
                 - sqs:SendMessage
-              Resource: !GetAtt QueueOrderPayment.Arn
+              Resource: !GetAtt QueuePaymentComplete.Arn
         - DynamoDBCrudPolicy:
             TableName: !Ref PaymentTable
 
